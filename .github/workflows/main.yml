@@ -16,7 +16,7 @@ jobs:
       - name: Read version from file
         id: get_version
         run: |
-          VERSION=$(cat VERSION)
+          VERSION=$(cat README.md)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Git tag
