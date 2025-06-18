@@ -22,15 +22,6 @@ jobs:
           VERSION=$(cat README.md)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Check if tag exists
-        id: check_tag
-        run: |
-          if git rev-parse ${{ steps.get_version.outputs.version }} >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Check if tag exists remotely
         id: check_tag
         run: |
