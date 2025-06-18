@@ -1,4 +1,5 @@
-name: "my-main-workflow"
+name: Auto Release
+
 on:
   push:
     branches:
@@ -15,16 +16,21 @@ jobs:
       - name: Read version from file
         id: get_version
         run: |
-          VERSION=$(cat README.md)
-          echo "VERSION=$VERSION"
+          VERSION=$(cat VERSION)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Git tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag ${{ steps.get_version.outputs.version }}
+          git push origin ${{ steps.get_version.outputs.version }}
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.get_version.outputs.version }}
           name: Release ${{ steps.get_version.outputs.version }}
-          body: |
-            Automated release from push to main.
+          body: Automated release from push to main.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
