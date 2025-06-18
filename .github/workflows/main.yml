@@ -31,7 +31,17 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create tag if not exists
+      - name: Check if tag exists remotely
+        id: check_tag
+        run: |
+          TAG=${{ steps.get_version.outputs.version }}
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create tag
         if: steps.check_tag.outputs.exists == 'false'
         run: |
           git config user.name "github-actions"
@@ -40,8 +50,8 @@ jobs:
           git push origin ${{ steps.get_version.outputs.version }}
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v1
         if: steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.get_version.outputs.version }}
           name: Release ${{ steps.get_version.outputs.version }}
