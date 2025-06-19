@@ -37,3 +37,14 @@ jobs:
           body: Automated release from push to main.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER }}" | docker login -u "nickramsay" --password-stdin
+
+      - name: Build Docker image
+        run: |
+          docker build -t nickramsay/myimage:${{ steps.get_version.outputs.version }} .
+
+      - name: Push Docker image
+        run: |
+          docker push nickramsay/yourimagename:${{ steps.get_version.outputs.version }}
