@@ -1,0 +1,64 @@
+name: tag-release
+
+on:
+  push:
+    tags:
+      - 'v*
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine version from tag
+        id: get_version
+        run: echo "VERSION=${{ github.ref_name.startsWith('v') && github.ref_name.substring(1) || github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }} .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }}
+
+
+      - name: Determine if current tag is latest in history
+        id: is_latest
+        run: |
+          git fetch --tags
+
+          CURRENT_COMMIT=$(git rev-parse "$GITHUB_REF_NAME")
+
+          for tag in $(git tag | grep -v "^$GITHUB_REF_NAME$"); do
+            OTHER_COMMIT=$(git rev-list -n 1 "$tag")
+            if git merge-base --is-ancestor "$CURRENT_COMMIT" "$OTHER_COMMIT"; then
+              echo "IS_LATEST=false" >> $GITHUB_ENV
+              exit 0
+            fi
+          done
+
+          echo "IS_LATEST=true" >> $GITHUB_ENV
+
+
+      - name: Push as latest if applicable
+        if: env.IS_LATEST == 'true'
+        run: |
+          docker tag ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }} ${{ env.DOCKER_IMAGE_NAME }}:latest
+          docker push ${{ env.DOCKER_IMAGE_NAME }}:latest
+
