@@ -47,4 +47,4 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push nickramsay/yourimagename:${{ steps.get_version.outputs.version }}
+          docker push nickramsay/myimage:${{ steps.get_version.outputs.version }}
